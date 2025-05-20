@@ -22,9 +22,6 @@ let fullData: [chartData] = (0..<1000).map { i in
     )
 }
 
-
-
-
 struct ContentView: View {
     
     struct chartData: Identifiable {
@@ -40,15 +37,13 @@ struct ContentView: View {
             price: Int.random(in: 100...200)
         )
     }
-    @State private var displayData: [chartData] = []
-    @State private var updatePeriod: Double = 1.0
+
     @State private var timer: Timer? = nil
-    @State private var index: Int = 0
-    @State private var indexPlus: Int = 1
+    @State private var index1: Int = 0
+    @State private var index2: Int = 0
+    @State private var index3: Int = 0
     @State private var xDomain = 0...100
-    @State private var isActive = false
-    
-    
+        
     @State private var chartOneSec: [chartData] = []
     @State private var chartThreeSec: [chartData] = []
     @State private var chartOneMin: [chartData] = []
@@ -113,10 +108,10 @@ struct ContentView: View {
                 .foregroundColor(Color.gray)
             }
             .background{
-                //                Color.black
+//                Color.black
             }
         }
-        HStack(){// MARK: change period  Button
+        HStack(){// MARK: change period Button
             Button {
                 selectedChartIndex = 0
             }
@@ -168,14 +163,26 @@ struct ContentView: View {
             Spacer()
         }
         .padding()
+        .background{
+//            Color.black
+        }
         .onAppear {
             startTimer()
         }
         .onDisappear {
             stopTimers()
         }
-    }
         
+        Divider()
+        
+        switch selectedChartIndex {
+        case 0 : Text("current data : \(fullData[index1].price)")
+        case 1 : Text("current data : \(fullData[index2].price)")
+        case 2 : Text("current data : \(fullData[index3].price)")
+        default: Text("")
+        }
+    }
+        // MARK: Chart print func
         func selectChart() -> [chartData]{
             switch selectedChartIndex {
             case 0 : return chartOneSec
@@ -186,30 +193,42 @@ struct ContentView: View {
         }
         
         func startTimer() {
+            
+            chartOneSec.append(fullData[index1])      // index1 = 0
+            chartThreeSec.append(fullData[index2])    // index2 = 0
+            chartOneMin.append(fullData[index3])      // index3 = 0
+
+            index1 += 1
+            index2 += 3
+            index3 += 60
+            t1 = 1
+            t2 = 3
+            t3 = 60
+            
             timerOneSec = Timer.scheduledTimer(withTimeInterval: 1, repeats: true){ _ in
-                if index >= fullData.count {
+                if index1 >= fullData.count {
                     timer?.invalidate()
                 } else {
-                    chartOneSec.append(fullData[index])
-                    index += 1
+                    chartOneSec.append(fullData[index1])
+                    index1 += 1
                     t1 += 1
                 }
             }
             timerThreeSec = Timer.scheduledTimer(withTimeInterval: 3, repeats: true){ _ in
-                if index >= fullData.count {
+                if index2 >= fullData.count {
                     timer?.invalidate()
                 } else {
-                    chartThreeSec.append(fullData[index])
-                    index += 3
+                    chartThreeSec.append(fullData[index2])
+                    index2 += 3
                     t2 += 3
                 }
             }
             timerOneMin = Timer.scheduledTimer(withTimeInterval: 60, repeats: true){ _ in
-                if index >= fullData.count {
+                if index3 >= fullData.count {
                     timer?.invalidate()
                 } else {
-                    chartOneMin.append(fullData[index])
-                    index += 60
+                    chartOneMin.append(fullData[index3])
+                    index3 += 60
                     t3 += 60
                 }
             }
