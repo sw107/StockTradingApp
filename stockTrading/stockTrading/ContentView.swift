@@ -34,6 +34,7 @@ struct AggregatedPrice: Identifiable {
 struct ContentView: View {
     
     @State private var errorMessage: String = ""
+    @State private var isFetchFailed: Bool = false
     
     @State private var stockNum: String = ""
     @State private var stockNumInput: String = ""
@@ -75,11 +76,6 @@ struct ContentView: View {
                 
                 Button {
                     stockNum = stockNumInput
-
-                    prices.removeAll()
-                    currentMinutePoints.removeAll()
-                    aggregatedPrices.removeAll()
-                    currentMinuteStart = floorToMinute(Date())
                 } label: {
                     Image(systemName: "magnifyingglass")
                 }
@@ -163,7 +159,17 @@ struct ContentView: View {
             currentMinuteStart = floorToMinute(Date())
             startTimer()
         }
+        .onChange(of: stockNum) {
+            prices.removeAll()
+            currentMinutePoints.removeAll()
+            aggregatedPrices.removeAll()
+            
+            currentMinuteStart = floorToMinute(Date())
+            
+            isFetchFailed = false
+        }
         .onDisappear { stopTimers() }
+        
         Divider()
     }
     
@@ -194,6 +200,7 @@ struct ContentView: View {
                 let stock = result.output
 
                 DispatchQueue.main.async {
+                    isFetchFailed = false
 
                     let timestamped = TimestampedQuote(time: Date(), quote: stock)
                     prices.append(timestamped)
@@ -223,7 +230,10 @@ struct ContentView: View {
                 }
 
             } catch {
-                print("❌ 파싱 실패")
+                DispatchQueue.main.async {
+                    isFetchFailed = true
+                    print("❌ 파싱 실패")
+                }
             }
         }.resume()
     }
@@ -237,7 +247,9 @@ struct ContentView: View {
     
     func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true){ _ in
-            fetchPrice()
+            if !isFetchFailed {
+                fetchPrice()
+            }
         }
     }
     
