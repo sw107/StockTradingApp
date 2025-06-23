@@ -36,7 +36,7 @@ struct ContentView: View {
     @State private var errorMessage: String = ""
     @State private var isFetchFailed: Bool = false
     
-    @State private var stockNum: String = ""
+    @State private var stockNum: String = "005930"
     @State private var stockNumInput: String = ""
     @State private var prices: [TimestampedQuote] = []
     @State private var currentMinutePoints: [TimestampedQuote] = []
@@ -67,7 +67,7 @@ struct ContentView: View {
                 Text("Stock Number")
                     .font(.title2)
                     .padding()
-                TextField("Enter stock number", text: $stockNumInput)
+                TextField("", text: $stockNumInput)
                     .frame(width: 150)
                     .padding()
                     .background(Color.gray.opacity(0.2))
@@ -145,6 +145,16 @@ struct ContentView: View {
                                     .foregroundStyle(Color.gray)
                             }
                         }
+                        .chartYScale(domain: {
+                            if let first = prices.first,
+                               let base = Double(first.quote.stck_prpr) {
+                                let lower = base * 0.8
+                                let upper = base * 1.2
+                                return lower...upper
+                            } else {
+                                return 0...1
+                            }
+                        }())
                     } // ScrollView(.horizontal)
                     .onChange(of: aggregatedPrices.count) {
                         withAnimation {
@@ -153,8 +163,11 @@ struct ContentView: View {
                     }
                 } // ScrollViewReader
             }// HStack
+            Divider()
             Spacer()
-        }
+            
+            
+        }// body
         .onAppear {
             currentMinuteStart = floorToMinute(Date())
             startTimer()
@@ -169,8 +182,6 @@ struct ContentView: View {
             isFetchFailed = false
         }
         .onDisappear { stopTimers() }
-        
-        Divider()
     }
     
     // MARK: Get Price
@@ -262,5 +273,3 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
-
- 

@@ -7,9 +7,9 @@
 
 import Foundation
 
-let AppKey: String = ""
-let AppSecret: String = ""
-let AccessToken: String = ""
+let AppKey: String = "PSVb75TVOoTs7WClqZJuazZY72Z02Leh9Qcq"
+let AppSecret: String = "i87lycD6sQaRQjhEdo9kMMnF9C0m+dY5iOP8DNTtF9PWwp9BIe1G7tc852MktHQ74igRDSa2r1MvVgfrTP2zE0slDd23npvOaMnvU+2vXCU1fVJGXpf9bb2u5MHHl2UiZXe/Tm34XibXCyX+vzYRckKjTt4FFnXaM97UHTwZnGpBCg6DIh4="
+let AccessToken: String = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0b2tlbiIsImF1ZCI6IjEwYmJkZTE4LTA5OTgtNDk2MS1hZTFiLTY1OWM5NDRmMmZlOSIsInByZHRfY2QiOiIiLCJpc3MiOiJ1bm9ndyIsImV4cCI6MTc1MDc2NTA0MCwiaWF0IjoxNzUwNjc4NjQwLCJqdGkiOiJQU1ZiNzVUVk9vVHM3V0NscVpKdWF6Wlk3MlowMkxlaDlRY3EifQ.HWSuaSM_BpjKXiGwl4Q1qwSr98iQepu-ZFvpx_c7OwI6v96-i49SQAn03ISKUZwsgwTE_qoDPvUGLLMAOjnKvw"
 func requestAccessToken(completion: @escaping (String?) -> Void) {
     let url = URL(string: "https://openapi.koreainvestment.com:9443/oauth2/tokenP")!
     
