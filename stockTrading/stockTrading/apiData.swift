@@ -7,10 +7,50 @@
 
 import Foundation
 
-let AppKey: String = ""
-let AppSecret: String = ""
-let AccessToken: String = ""
+let AppKey: String = "PSVb75TVOoTs7WClqZJuazZY72Z02Leh9Qcq"
+let AppSecret: String = "i87lycD6sQaRQjhEdo9kMMnF9C0m+dY5iOP8DNTtF9PWwp9BIe1G7tc852MktHQ74igRDSa2r1MvVgfrTP2zE0slDd23npvOaMnvU+2vXCU1fVJGXpf9bb2u5MHHl2UiZXe/Tm34XibXCyX+vzYRckKjTt4FFnXaM97UHTwZnGpBCg6DIh4="
+var AccessToken: String = ""
+
+
+struct TokenStorage {
+    static let tokenKey = "access_token_key"
+    static let dateKey = "access_token_date"
+
+    // 토큰 저장 (현재 시간도 함께 저장)
+    static func save(token: String) {
+        UserDefaults.standard.set(token, forKey: tokenKey)
+        UserDefaults.standard.set(Date(), forKey: dateKey)
+    }
+
+    // 저장된 토큰과 날짜 불러오기
+    static func load() -> (token: String, isValid: Bool)? {
+        guard let token = UserDefaults.standard.string(forKey: tokenKey),
+              let date = UserDefaults.standard.object(forKey: dateKey) as? Date else {
+            return nil
+        }
+
+        let elapsed = Date().timeIntervalSince(date)
+        let isValid = elapsed < (60 * 60 * 24)  // 24시간 이내면 유효
+
+        return (token, isValid)
+    }
+
+    // 초기화 또는 만료 시 사용
+    static func clear() {
+        UserDefaults.standard.removeObject(forKey: tokenKey)
+        UserDefaults.standard.removeObject(forKey: dateKey)
+    }
+}
+
+
+
 func requestAccessToken(completion: @escaping (String?) -> Void) {
+    
+    if let stored = TokenStorage.load(), stored.isValid {
+        completion(stored.token)
+        return
+    }
+    
     let url = URL(string: "https://openapi.koreainvestment.com:9443/oauth2/tokenP")!
     
     var request = URLRequest(url: url)
@@ -33,6 +73,8 @@ func requestAccessToken(completion: @escaping (String?) -> Void) {
         
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let accessToken = json["access_token"] as? String {
+            AccessToken = accessToken
+            TokenStorage.save(token: accessToken)
             completion(accessToken)
         } else {
             completion(nil)

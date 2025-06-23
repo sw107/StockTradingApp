@@ -216,6 +216,13 @@ struct ContentView: View {
         .onAppear {
             currentMinuteStart = floorToMinute(Date())
             startTimer()
+            requestAccessToken { token in
+                if let token = token {
+                    print("🟢 토큰 발급 성공 \(token)")
+                } else {
+                    print("🔴 토큰 발급 실패")
+                }
+            }
         }
         .onChange(of: stockNum) {
             prices.removeAll()
