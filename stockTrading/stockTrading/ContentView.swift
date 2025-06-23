@@ -31,16 +31,39 @@ struct AggregatedPrice: Identifiable {
     let end: Double
 }
 
+
+
+struct StockSearchResult: Identifiable, Decodable {
+    var id: String { stck_shrn_iscd }
+    let stck_shrn_iscd: String
+    let hts_kor_isnm: String
+}
+
+struct StockSearchFullResponse: Decodable {
+    let rt_cd: String
+    let output: [StockSearchResult]?
+}
+
+
+
+
 struct ContentView: View {
     
     @State private var errorMessage: String = ""
     @State private var isFetchFailed: Bool = false
     
-    @State private var stockNum: String = "005930"
+    @State private var stockNum: String = ""
+    @State private var stockName: String = ""
     @State private var stockNumInput: String = ""
     @State private var prices: [TimestampedQuote] = []
     @State private var currentMinutePoints: [TimestampedQuote] = []
     @State private var aggregatedPrices: [AggregatedPrice] = []
+    
+    
+    @State private var stockNameInput: String = ""
+    @State private var searchResults: [StockSearchResult] = []
+
+    
     
     @State private var currentMinuteStart: Date = Date()
     @State private var timer: Timer? = nil
@@ -164,8 +187,30 @@ struct ContentView: View {
                 } // ScrollViewReader
             }// HStack
             Divider()
-            Spacer()
             
+            HStack(){
+                Button {
+                    
+                } label: {
+                    Text("매수")
+                        .foregroundColor(.black)
+                        .font(.headline)
+                        .frame(width: 150, height: 50, alignment: .center)
+                        .background(Color.blue)
+                        .cornerRadius(15)
+                }
+                Button{
+                    
+                } label: {
+                    Text("매도")
+                        .foregroundColor(.black)
+                        .font(.headline)
+                        .frame(width: 150, height: 50, alignment: .center)
+                        .background(Color.red)
+                        .cornerRadius(15)
+                }
+            }
+            Spacer()
             
         }// body
         .onAppear {
@@ -209,7 +254,7 @@ struct ContentView: View {
             do {
                 let result = try JSONDecoder().decode(ApiResponse.self, from: data)
                 let stock = result.output
-
+                
                 DispatchQueue.main.async {
                     isFetchFailed = false
 
@@ -267,9 +312,21 @@ struct ContentView: View {
     func stopTimers() {
         timer?.invalidate()
     }
+    
+    
+    func resetChartData() {
+            prices.removeAll()
+            currentMinutePoints.removeAll()
+            aggregatedPrices.removeAll()
+            currentMinuteStart = floorToMinute(Date())
+        }
+    
+    
+    
 }
 
 
 #Preview {
     ContentView()
 }
+
