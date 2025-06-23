@@ -7,8 +7,33 @@
 
 import Foundation
 
-let AppKey: String = "PSVb75TVOoTs7WClqZJuazZY72Z02Leh9Qcq"
-let AppSecret: String = "i87lycD6sQaRQjhEdo9kMMnF9C0m+dY5iOP8DNTtF9PWwp9BIe1G7tc852MktHQ74igRDSa2r1MvVgfrTP2zE0slDd23npvOaMnvU+2vXCU1fVJGXpf9bb2u5MHHl2UiZXe/Tm34XibXCyX+vzYRckKjTt4FFnXaM97UHTwZnGpBCg6DIh4="
+struct SecretManager {
+    static let shared = SecretManager()
+    
+    private var secrets: [String: Any] = [:]
+
+        private init() {
+            if let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
+               let data = try? Data(contentsOf: url),
+               let result = try? PropertyListSerialization.propertyList(from: data, format: nil),
+               let dict = result as? [String: Any] {
+                self.secrets = dict
+            } else {
+                print("❌ Secrets.plist 파싱 실패")
+            }
+        }
+
+    var appKey: String {
+        return secrets["appKey"] as? String ?? ""
+    }
+    
+    var appSecret: String {
+        return secrets["appSecret"] as? String ?? ""
+    }
+}
+
+let AppKey = SecretManager.shared.appKey
+let AppSecret = SecretManager.shared.appSecret
 var AccessToken: String = ""
 
 
@@ -33,12 +58,6 @@ struct TokenStorage {
         let isValid = elapsed < (60 * 60 * 24)  // 24시간 이내면 유효
 
         return (token, isValid)
-    }
-
-    // 초기화 또는 만료 시 사용
-    static func clear() {
-        UserDefaults.standard.removeObject(forKey: tokenKey)
-        UserDefaults.standard.removeObject(forKey: dateKey)
     }
 }
 
@@ -81,3 +100,4 @@ func requestAccessToken(completion: @escaping (String?) -> Void) {
         }
     }.resume()
 }
+
