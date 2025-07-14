@@ -10,7 +10,7 @@ import Charts
 
 struct StockQuote: Decodable {
     let stck_prpr: String
-    let stck_shrn_iscd: String
+//    let stck_shrn_iscd: String
 }
 
 struct ApiResponse: Decodable {
@@ -44,7 +44,10 @@ struct StockSearchFullResponse: Decodable {
     let output: [StockSearchResult]?
 }
 
-
+struct StockEntry {
+    let name: String
+    let code: String
+}
 
 
 struct ContentView: View {
@@ -61,9 +64,7 @@ struct ContentView: View {
     
     
     @State private var stockNameInput: String = ""
-    @State private var searchResults: [StockSearchResult] = []
-
-    
+    @State private var stockList: [StockEntry] = []
     
     @State private var currentMinuteStart: Date = Date()
     @State private var timer: Timer? = nil
@@ -90,7 +91,7 @@ struct ContentView: View {
                 Text("Stock Number")
                     .font(.title2)
                     .padding()
-                TextField("", text: $stockNumInput)
+                TextField("", text: $stockNameInput)
                     .frame(width: 150)
                     .padding()
                     .background(Color.gray.opacity(0.2))
@@ -98,14 +99,33 @@ struct ContentView: View {
                     .padding()
                 
                 Button {
-                    stockNum = stockNumInput
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                }
-
+//                    if let match = stockList.first(where: { $0.name.contains(stockNameInput) }) {
+//                        stockNum = match.code
+//                        stockName = match.name
+//                    }
+                    let input = stockNameInput
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        
+                        print("🔍 입력값: [\(input)]")
+                        
+                        if let match = stockList.first(where: {
+                            $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                              .localizedStandardContains(input)
+                        }) {
+                            print("✅ 매칭됨: \(match.name) → \(match.code)")
+                            stockNum = match.code
+                            stockName = match.name
+                        } else {
+                            print("❌ 검색 실패")
+                            errorMessage = "검색 결과 없음"
+                        }
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                
             }
             .padding()
-    
+            
             Divider()
             
             if(prices.isEmpty){
@@ -137,7 +157,7 @@ struct ContentView: View {
                                     .foregroundStyle(Color.white.opacity(0.2))
                                 }
                             }
-
+                            
                             if let live = liveBar {
                                 live
                             }
@@ -178,7 +198,7 @@ struct ContentView: View {
                                 return 0...1
                             }
                         }())
-                    } // ScrollView(.horizontal)
+                    }
                     .onChange(of: aggregatedPrices.count) {
                         withAnimation {
                             proxy.scrollTo(aggregatedPrices.count, anchor: .trailing)
@@ -214,6 +234,7 @@ struct ContentView: View {
             
         }// body
         .onAppear {
+            stockList = loadStockList()
             currentMinuteStart = floorToMinute(Date())
             requestAccessToken { token in
                 if let token = token {
@@ -227,6 +248,8 @@ struct ContentView: View {
             }
         }
         .onChange(of: stockNum) {
+            print("📌 stockNum 변경 감지됨 → \(stockNum)")
+
             prices.removeAll()
             currentMinutePoints.removeAll()
             aggregatedPrices.removeAll()
@@ -234,13 +257,34 @@ struct ContentView: View {
             currentMinuteStart = floorToMinute(Date())
             
             isFetchFailed = false
+            
+//            fetchPrice()
         }
-        .onDisappear { stopTimers() }
+        .onDisappear { stopTimers()
+        }
     }
+
+    
+    func loadStockList() -> [StockEntry] {
+            guard let path = Bundle.main.path(forResource: "stocksData", ofType: "csv"),
+                  let content = try? String(contentsOfFile: path, encoding: .utf8) else {
+                print("❌ 종목 리스트 로딩 실패")
+                return []
+            }
+
+            let lines = content.split(separator: "\n").dropFirst()
+            return lines.compactMap { line in
+                let parts = line.split(separator: ",")
+                guard parts.count >= 2 else { return nil }
+                let name = String(parts[3]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let code = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+                return StockEntry(name: name, code: code)            }
+        }
     
     // MARK: Get Price
     func fetchPrice() {
         
+       
         let urlStr = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=\(stockNum)"
 
         guard let url = URL(string: urlStr) else {
@@ -323,13 +367,11 @@ struct ContentView: View {
     
     
     func resetChartData() {
-            prices.removeAll()
-            currentMinutePoints.removeAll()
-            aggregatedPrices.removeAll()
-            currentMinuteStart = floorToMinute(Date())
-        }
-    
-    
+        prices.removeAll()
+        currentMinutePoints.removeAll()
+        aggregatedPrices.removeAll()
+        currentMinuteStart = floorToMinute(Date())
+    }
     
 }
 
