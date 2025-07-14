@@ -171,8 +171,8 @@ struct ContentView: View {
                         .chartYScale(domain: {
                             if let first = prices.first,
                                let base = Double(first.quote.stck_prpr) {
-                                let lower = base * 0.8
-                                let upper = base * 1.2
+                                let lower = base * 0.95
+                                let upper = base * 1.05
                                 return lower...upper
                             } else {
                                 return 0...1
@@ -188,7 +188,7 @@ struct ContentView: View {
             }// HStack
             Divider()
             
-            HStack(){
+            HStack(){  // MARK: trade button
                 Button {
                     
                 } label: {
@@ -297,7 +297,6 @@ struct ContentView: View {
             } catch {
                 DispatchQueue.main.async {
                     isFetchFailed = true
-                    print("❌ 파싱 실패")
                 }
             }
         }.resume()
