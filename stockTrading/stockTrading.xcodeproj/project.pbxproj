@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		7037C67E2E09AC6A00F78BE7 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 7037C67D2E09AC6A00F78BE7 /* ZIPFoundation */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		70654C412DD9C6DA005F4F7E /* stockTrading.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = stockTrading.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -27,7 +23,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7037C67E2E09AC6A00F78BE7 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,7 +65,6 @@
 			);
 			name = stockTrading;
 			packageProductDependencies = (
-				7037C67D2E09AC6A00F78BE7 /* ZIPFoundation */,
 			);
 			productName = stockTrading;
 			productReference = 70654C412DD9C6DA005F4F7E /* stockTrading.app */;
@@ -101,7 +95,6 @@
 			mainGroup = 70654C382DD9C6DA005F4F7E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7037C67C2E09AC6A00F78BE7 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 70654C422DD9C6DA005F4F7E /* Products */;
@@ -333,25 +326,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		7037C67C2E09AC6A00F78BE7 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.9.19;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		7037C67D2E09AC6A00F78BE7 /* ZIPFoundation */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7037C67C2E09AC6A00F78BE7 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
-			productName = ZIPFoundation;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 70654C392DD9C6DA005F4F7E /* Project object */;
 }
