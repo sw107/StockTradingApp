@@ -1,10 +1,3 @@
-//
-//  StocksModels.swift
-//  stockTrading
-//
-//  Created by 최승원 on 7/22/25.
-//
-
 import Foundation
 
 struct StockQuote: Decodable {
@@ -22,11 +15,11 @@ struct TimestampedQuote: Identifiable {
 }
 
 struct AggregatedPrice: Identifiable {
-    let id = UUID()
-    let minuteStart: Date
-    let index: Int
-    let start: Double
-    let end: Double
+    var id: Date { minuteStart }
+    var minuteStart: Date
+    var index: Int
+    var start: Double
+    var end: Double
 }
 
 struct StockEntry {

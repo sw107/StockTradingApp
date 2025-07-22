@@ -11,3 +11,4 @@ func floorToMinute(_ date: Date) -> Date {
     let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
     return Calendar.current.date(from: components) ?? date
 }
+

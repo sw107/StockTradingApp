@@ -10,73 +10,30 @@ import Charts
 
 struct ContentView: View {
     
-    @State private var errorMessage: String = ""
     @State private var isFetchFailed: Bool = false
-    
-    @State private var stockNum: String = ""
-    @State private var stockName: String = ""
-    @State private var prices: [TimestampedQuote] = []
-    @State private var currentMinutePoints: [TimestampedQuote] = []
-    @State private var aggregatedPrices: [AggregatedPrice] = []
-    
     
     @State private var stockNameInput: String = ""
     @State private var stockList: [StockEntry] = []
+    @State private var stockNum: String = ""
+    @State private var stockName: String = ""
+    @State private var errorMessage: String = ""
+    
+    @State private var aggregatedPrices: [AggregatedPrice] = []
+    @State private var currentMinutePoints: [TimestampedQuote] = []
+    @State private var prices: [TimestampedQuote] = []
     
     @State private var currentMinuteStart: Date = Date()
     @State private var timer: Timer? = nil
     
-    var currentOpenClose: (open: Double, close: Double)? {
-        guard currentMinutePoints.count >= 2 else { return nil }
-        let open = Double(currentMinutePoints.first?.quote.stck_prpr ?? "0") ?? 0
-        let close = Double(currentMinutePoints.last?.quote.stck_prpr ?? "0") ?? 0
-        return (open, close)
-    }
-
-    var liveBar: BarMark? {
-        guard let oc = currentOpenClose else { return nil }
-        return BarMark(
-            x: .value("Index", aggregatedPrices.count),
-            yStart: .value("Start", oc.open),
-            yEnd: .value("End", oc.close)
-        )
-    }
-    
     var body: some View {
         VStack (spacing : 20){
-            HStack{ // MARK: Search Stock
-                Text("Stock Number")
-                    .font(.title2)
-                    .padding()
-                TextField("", text: $stockNameInput)
-                    .frame(width: 150)
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(5)
-                    .padding()
-                
-                Button {
-                    let input = stockNameInput
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                        print("🔍 입력값: [\(input)]")
-                        
-                        if let match = stockList.first(where: {
-                            $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                              .localizedStandardContains(input)
-                        }) {
-                            stockNum = match.code
-                                .trimmingCharacters(in: .whitespacesAndNewlines)
-                                .replacingOccurrences(of: "\"", with: "")
-                            stockName = match.name
-                        } else {
-                            errorMessage = "검색 결과 없음"
-                        }
-                    } label: {
-                        Image(systemName: "magnifyingglass")
-                    }
-                
-            }
-            .padding()
+            StockSearchView(
+                stockNameInput: $stockNameInput,
+                stockList: stockList,
+                stockNum: $stockNum,
+                stockName: $stockName,
+                errorMessage: $errorMessage
+            )
             
             Divider()
             
@@ -88,75 +45,11 @@ struct ContentView: View {
                     .font(.title)
             }
             HStack{ // MARK: Chart
-                ScrollViewReader { proxy in
-                    ScrollView(.horizontal){
-                        Chart {
-                            ForEach(0..<10, id: \.self) { i in
-                                if let bar = aggregatedPrices.first(where: { $0.index == i }) {
-                                    BarMark(
-                                        x: .value("Index", bar.index),
-                                        yStart: .value("Start", bar.start),
-                                        yEnd: .value("End", bar.end)
-                                    )
-                                    .foregroundStyle(bar.end > bar.start ? Color.green : Color.red)
-                                }
-                                else {
-                                    RectangleMark(
-                                        x: .value("Index", i),
-                                        yStart: .value("Start", 0),
-                                        yEnd: .value("End", 0.1)
-                                    )
-                                    .foregroundStyle(Color.white.opacity(0.2))
-                                }
-                            }
-                            
-                            if let live = liveBar {
-                                live
-                            }
-                        }
-                        .frame(width: max(CGFloat(aggregatedPrices.count) * 20, 340), height: 200)
-                        .padding()
-                        .chartXAxis {
-                            AxisMarks(values: [aggregatedPrices.count]) { value in
-                                if let index = value.as(Int.self),
-                                   index == aggregatedPrices.count,
-                                   currentMinutePoints.count > 0 {
-                                    let currentTime = floorToMinute(currentMinutePoints.last!.time)
-                                    AxisGridLine()
-                                    AxisTick()
-                                    AxisValueLabel {
-                                        Text(currentTime, format: .dateTime.hour().minute().second())
-                                    }
-                                }
-                            }
-                        }
-                        .chartYAxis {
-                            AxisMarks {
-                                AxisGridLine()
-                                    .foregroundStyle(Color.gray)
-                                AxisTick()
-                                    .foregroundStyle(Color.gray)
-                                AxisValueLabel()
-                                    .foregroundStyle(Color.gray)
-                            }
-                        }
-                        .chartYScale(domain: {
-                            if let first = prices.first,
-                               let base = Double(first.quote.stck_prpr) {
-                                let lower = base * 0.95
-                                let upper = base * 1.05
-                                return lower...upper
-                            } else {
-                                return 0...1
-                            }
-                        }())
-                    }
-                    .onChange(of: aggregatedPrices.count) {
-                        withAnimation {
-                            proxy.scrollTo(aggregatedPrices.count, anchor: .trailing)
-                        }
-                    }
-                } // ScrollViewReader
+                StockChartView(
+                    aggregatedPrices: aggregatedPrices,
+                    currentMinutePoints: currentMinutePoints,
+                    prices: prices
+                )
             }// HStack
             Divider()
             
@@ -206,7 +99,41 @@ struct ContentView: View {
             startTimer()
 
             resetChartData()
-            fetchPrice()
+            StockAPI.fetchPrice(for: stockNum) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let stock):
+                        isFetchFailed = false
+
+                        let timestamped = TimestampedQuote(time: Date(), quote: stock)
+                        prices.append(timestamped)
+                        let minute = floorToMinute(timestamped.time)
+
+                        if minute == currentMinuteStart {
+                            currentMinutePoints.append(timestamped)
+                        } else {
+                            if currentMinutePoints.count >= 2 {
+                                let open = Double(currentMinutePoints.first?.quote.stck_prpr ?? "0") ?? 0
+                                let close = Double(currentMinutePoints.last?.quote.stck_prpr ?? "0") ?? 0
+                                let newBar = AggregatedPrice(
+                                    minuteStart: currentMinuteStart,
+                                    index: aggregatedPrices.count,
+                                    start: open,
+                                    end: close
+                                )
+                                aggregatedPrices.append(newBar)
+                            }
+
+                            currentMinuteStart = minute
+                            currentMinutePoints = [timestamped]
+                        }
+
+                    case .failure(let error):
+                        isFetchFailed = true
+                        print("❌ 가격 불러오기 실패: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
         .onDisappear
         {
@@ -230,75 +157,45 @@ struct ContentView: View {
                 let code = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
                 return StockEntry(name: name, code: code)            }
         }
-    
-    // MARK: Get Price
-    func fetchPrice() {
-        guard !stockNum.isEmpty else {
-            return
-        }
 
-        let urlStr = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=\(stockNum)"
-
-        guard let url = URL(string: urlStr) else {
-            self.errorMessage = "URL 생성 실패"
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(AccessToken)", forHTTPHeaderField: "authorization")
-        request.setValue(AppKey, forHTTPHeaderField: "appKey")
-        request.setValue(AppSecret, forHTTPHeaderField: "appSecret")
-        request.setValue("FHKST01010100", forHTTPHeaderField: "tr_id")
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data else { return }
-
-            do {
-                let result = try JSONDecoder().decode(ApiResponse.self, from: data)
-                let stock = result.output
-
-                DispatchQueue.main.async {
-                    isFetchFailed = false
-
-                    let timestamped = TimestampedQuote(time: Date(), quote: stock)
-                    prices.append(timestamped)
-                    let minute = floorToMinute(timestamped.time)
-
-                    if minute == currentMinuteStart {
-                        currentMinutePoints.append(timestamped)
-                    } else {
-                        if currentMinutePoints.count >= 2 {
-                            let open = Double(currentMinutePoints.first?.quote.stck_prpr ?? "0") ?? 0
-                            let close = Double(currentMinutePoints.last?.quote.stck_prpr ?? "0") ?? 0
-                            let newBar = AggregatedPrice(
-                                minuteStart: currentMinuteStart,
-                                index: aggregatedPrices.count,
-                                start: open,
-                                end: close
-                            )
-                            aggregatedPrices.append(newBar)
-                        }
-
-                        currentMinuteStart = minute
-                        currentMinutePoints = [timestamped]
-                    }
-                }
-
-            } catch {
-                DispatchQueue.main.async {
-                    isFetchFailed = true
-                    print("❌ 디코딩 실패: \(error.localizedDescription)")
-                }
-            }
-        }.resume()
-    }
-    
     func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true){ _ in
             if !isFetchFailed {
-                fetchPrice()
+                StockAPI.fetchPrice(for: stockNum) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let stock):
+                            isFetchFailed = false
+
+                            let timestamped = TimestampedQuote(time: Date(), quote: stock)
+                            prices.append(timestamped)
+                            let minute = floorToMinute(timestamped.time)
+
+                            if minute == currentMinuteStart {
+                                currentMinutePoints.append(timestamped)
+                            } else {
+                                if currentMinutePoints.count >= 2 {
+                                    let open = Double(currentMinutePoints.first?.quote.stck_prpr ?? "0") ?? 0
+                                    let close = Double(currentMinutePoints.last?.quote.stck_prpr ?? "0") ?? 0
+                                    let newBar = AggregatedPrice(
+                                        minuteStart: currentMinuteStart,
+                                        index: aggregatedPrices.count,
+                                        start: open,
+                                        end: close
+                                    )
+                                    aggregatedPrices.append(newBar)
+                                }
+
+                                currentMinuteStart = minute
+                                currentMinutePoints = [timestamped]
+                            }
+
+                        case .failure(let error):
+                            isFetchFailed = true
+                            print("❌ 가격 불러오기 실패: \(error.localizedDescription)")
+                        }
+                    }
+                }
             }
         }
     }
