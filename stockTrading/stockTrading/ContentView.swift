@@ -8,48 +8,6 @@
 import SwiftUI
 import Charts
 
-struct StockQuote: Decodable {
-    let stck_prpr: String
-//    let stck_shrn_iscd: String
-}
-
-struct ApiResponse: Decodable {
-    let output: StockQuote
-}
-
-struct TimestampedQuote: Identifiable {
-    let id = UUID()
-    let time: Date
-    let quote: StockQuote
-}
-
-struct AggregatedPrice: Identifiable {
-    let id = UUID()
-    let minuteStart: Date
-    let index: Int
-    let start: Double
-    let end: Double
-}
-
-
-
-struct StockSearchResult: Identifiable, Decodable {
-    var id: String { stck_shrn_iscd }
-    let stck_shrn_iscd: String
-    let hts_kor_isnm: String
-}
-
-struct StockSearchFullResponse: Decodable {
-    let rt_cd: String
-    let output: [StockSearchResult]?
-}
-
-struct StockEntry {
-    let name: String
-    let code: String
-}
-
-
 struct ContentView: View {
     
     @State private var errorMessage: String = ""
@@ -57,7 +15,6 @@ struct ContentView: View {
     
     @State private var stockNum: String = ""
     @State private var stockName: String = ""
-    @State private var stockNumInput: String = ""
     @State private var prices: [TimestampedQuote] = []
     @State private var currentMinutePoints: [TimestampedQuote] = []
     @State private var aggregatedPrices: [AggregatedPrice] = []
@@ -99,24 +56,19 @@ struct ContentView: View {
                     .padding()
                 
                 Button {
-//                    if let match = stockList.first(where: { $0.name.contains(stockNameInput) }) {
-//                        stockNum = match.code
-//                        stockName = match.name
-//                    }
                     let input = stockNameInput
                             .trimmingCharacters(in: .whitespacesAndNewlines)
-                        
                         print("🔍 입력값: [\(input)]")
                         
                         if let match = stockList.first(where: {
                             $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
                               .localizedStandardContains(input)
                         }) {
-                            print("✅ 매칭됨: \(match.name) → \(match.code)")
                             stockNum = match.code
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                                .replacingOccurrences(of: "\"", with: "")
                             stockName = match.name
                         } else {
-                            print("❌ 검색 실패")
                             errorMessage = "검색 결과 없음"
                         }
                     } label: {
@@ -250,17 +202,15 @@ struct ContentView: View {
         .onChange(of: stockNum) {
             print("📌 stockNum 변경 감지됨 → \(stockNum)")
 
-            prices.removeAll()
-            currentMinutePoints.removeAll()
-            aggregatedPrices.removeAll()
-            
-            currentMinuteStart = floorToMinute(Date())
-            
-            isFetchFailed = false
-            
-//            fetchPrice()
+            stopTimers()
+            startTimer()
+
+            resetChartData()
+            fetchPrice()
         }
-        .onDisappear { stopTimers()
+        .onDisappear
+        {
+            stopTimers()
         }
     }
 
@@ -283,8 +233,10 @@ struct ContentView: View {
     
     // MARK: Get Price
     func fetchPrice() {
-        
-       
+        guard !stockNum.isEmpty else {
+            return
+        }
+
         let urlStr = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=\(stockNum)"
 
         guard let url = URL(string: urlStr) else {
@@ -300,14 +252,13 @@ struct ContentView: View {
         request.setValue(AppSecret, forHTTPHeaderField: "appSecret")
         request.setValue("FHKST01010100", forHTTPHeaderField: "tr_id")
 
-        
         URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data else { return }
 
             do {
                 let result = try JSONDecoder().decode(ApiResponse.self, from: data)
                 let stock = result.output
-                
+
                 DispatchQueue.main.async {
                     isFetchFailed = false
 
@@ -316,10 +267,8 @@ struct ContentView: View {
                     let minute = floorToMinute(timestamped.time)
 
                     if minute == currentMinuteStart {
-                        // 같은 분 → 실시간 업데이트
                         currentMinutePoints.append(timestamped)
                     } else {
-                        // 1분 경과 → 기존 막대 고정
                         if currentMinutePoints.count >= 2 {
                             let open = Double(currentMinutePoints.first?.quote.stck_prpr ?? "0") ?? 0
                             let close = Double(currentMinutePoints.last?.quote.stck_prpr ?? "0") ?? 0
@@ -332,7 +281,6 @@ struct ContentView: View {
                             aggregatedPrices.append(newBar)
                         }
 
-                        // 새로운 분 시작
                         currentMinuteStart = minute
                         currentMinutePoints = [timestamped]
                     }
@@ -341,17 +289,11 @@ struct ContentView: View {
             } catch {
                 DispatchQueue.main.async {
                     isFetchFailed = true
+                    print("❌ 디코딩 실패: \(error.localizedDescription)")
                 }
             }
         }.resume()
     }
-    
-    func floorToMinute(_ date: Date) -> Date {
-        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-        return Calendar.current.date(from: components) ?? date
-    }
-    
-   
     
     func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true){ _ in
@@ -378,4 +320,3 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
-
