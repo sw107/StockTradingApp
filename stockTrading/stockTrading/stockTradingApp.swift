@@ -1,10 +1,3 @@
-//
-//  stockTradingApp.swift
-//  stockTrading
-//
-//  Created by 최승원 on 5/18/25.
-//
-
 import SwiftUI
 
 @main
