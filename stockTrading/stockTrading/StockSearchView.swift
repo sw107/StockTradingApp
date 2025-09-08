@@ -10,11 +10,8 @@ struct StockSearchView: View {
 
     var body: some View {
         HStack {
-            Text("Stock Name")
-                .font(.title2)
-                .padding()
             TextField("", text: $stockNameInput)
-                .frame(width: 150)
+                .frame(maxWidth: 500)
                 .padding()
                 .background(Color.gray.opacity(0.2))
                 .cornerRadius(5)

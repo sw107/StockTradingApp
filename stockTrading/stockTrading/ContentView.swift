@@ -41,7 +41,7 @@ struct ContentView: View {
                 Text("loading...")
                     .font(.title)
             }else {
-                Text("\(prices.last!.quote.stck_prpr)")
+                Text("\(stockName)  \(prices.last!.quote.stck_prpr)원")
                     .font(.title)
             }
             HStack{ // MARK: Chart
@@ -94,6 +94,7 @@ struct ContentView: View {
         }
         .onChange(of: stockNum) {
             print("📌 stockNum 변경 감지됨 → \(stockNum)")
+            print("\(stockName)")
 
             stopTimers()
             startTimer()
