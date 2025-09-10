@@ -77,8 +77,8 @@ struct StockChartView: View {
                 .chartYScale(domain: {
                     if let first = prices.first,
                        let base = Double(first.quote.stck_prpr) {
-                        let lower = base * 0.95
-                        let upper = base * 1.05
+                        let lower = base * 0.995
+                        let upper = base * 1.005
                         return lower...upper
                     } else {
                         return 0...1
