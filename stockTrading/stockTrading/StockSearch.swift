@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-struct StockSearchView: View {
+struct StockSearch: View {
     @Binding var stockNameInput: String
     let stockList: [StockEntry]
     @Binding var stockNum: String

@@ -26,7 +26,7 @@ struct TradeView: View {
     
     var body: some View {
         VStack (spacing : 20){
-            StockSearchView(
+            StockSearch(
                 stockNameInput: $stockNameInput,
                 stockList: stockList,
                 stockNum: $stockNum,
@@ -44,7 +44,7 @@ struct TradeView: View {
                     .font(.title)
             }
             HStack{ // MARK: Chart
-                StockChartView(
+                StockChart(
                     aggregatedPrices: aggregatedPrices,
                     currentMinutePoints: currentMinutePoints,
                     prices: prices
