@@ -4,7 +4,8 @@ import SwiftUI
 struct stockTradingApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TradeView()
         }
     }
 }
+

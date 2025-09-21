@@ -10,12 +10,9 @@ import SwiftUI
 struct TradeView: View {
     
     @State private var isFetchFailed: Bool = false
+    @State private var sheetToggle: Bool = false
     
-    @State private var stockNameInput: String = ""
-    @State private var stockList: [StockEntry] = []
-    @State private var stockNum: String = ""
-    @State private var stockName: String = ""
-    @State private var errorMessage: String = ""
+    @StateObject private var SearchVM = SearchViewModel()
     
     @State private var aggregatedPrices: [AggregatedPrice] = []
     @State private var currentMinutePoints: [TimestampedQuote] = []
@@ -26,23 +23,22 @@ struct TradeView: View {
     
     var body: some View {
         VStack (spacing : 20){
-            StockSearch(
-                stockNameInput: $stockNameInput,
-                stockList: stockList,
-                stockNum: $stockNum,
-                stockName: $stockName,
-                errorMessage: $errorMessage
-            )
             
+            // 검색 버튼
+            Button {
+                sheetToggle.toggle()
+            } label: {
+                Image(systemName: "magnifyingglass")
+            }
+            .fullScreenCover(isPresented: $sheetToggle){
+                SearchView(SearchVM: SearchVM) { selected in
+                    SearchVM.stockNum = selected.code.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+                    SearchVM.stockName = selected.name
+                }
+            }
+
             Divider()
             
-            if(prices.isEmpty){
-                Text("loading...")
-                    .font(.title)
-            }else {
-                Text("\(stockName)  \(prices.last!.quote.stck_prpr)원")
-                    .font(.title)
-            }
             HStack{ // MARK: Chart
                 StockChart(
                     aggregatedPrices: aggregatedPrices,
@@ -52,7 +48,12 @@ struct TradeView: View {
             }// HStack
             Divider()
             
-            HStack(){  // MARK: trade button
+            Text(prices.isEmpty ? "loading... " : "\(SearchVM.stockName.trimmingCharacters(in: CharacterSet(charactersIn: "\""))) :  ₩\(prices.last!.quote.stck_prpr)")
+                .font(.title)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+            
+            HStack(){ // MARK: trade button
                 Button {
                     // func
                 } label: {
@@ -81,7 +82,7 @@ struct TradeView: View {
             
         }// body
         .onAppear {
-            stockList = loadStockList()
+            SearchVM.stockList = loadStockList()
             currentMinuteStart = floorToMinute(Date())
             requestAccessToken { token in
                 if let token = token {
@@ -94,14 +95,14 @@ struct TradeView: View {
                 }
             }
         }
-        .onChange(of: stockNum) {
-            print("📌 stockNum 변경 감지됨 → \(stockNum), \(stockName)")
+        .onChange(of: SearchVM.stockNum) {
+            print("📌 stockNum 변경 감지됨 → \(SearchVM.stockNum), \(SearchVM.stockName)")
 
             stopTimers()
             startTimer()
 
             resetChartData()
-            StockAPI.fetchPrice(for: stockNum) { result in
+            StockAPI.fetchPrice(for: SearchVM.stockNum) { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let stock):
@@ -163,7 +164,7 @@ struct TradeView: View {
     func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true){ _ in
             if !isFetchFailed {
-                StockAPI.fetchPrice(for: stockNum) { result in
+                StockAPI.fetchPrice(for: SearchVM.stockNum) { result in
                     DispatchQueue.main.async {
                         switch result {
                         case .success(let stock):
@@ -205,7 +206,6 @@ struct TradeView: View {
     func stopTimers() {
         timer?.invalidate()
     }
-    
     
     func resetChartData() {
         prices.removeAll()
